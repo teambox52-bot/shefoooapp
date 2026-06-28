@@ -18,6 +18,23 @@ import { useAuth } from '@/auth/AuthProvider';
 
 const VITAL_ORDER: BackendVitalType[] = ['blood_pressure', 'heart_rate', 'oxygen', 'blood_sugar'];
 
+type LocalizedTextValue = string | { en?: string; ar?: string } | null | undefined;
+type LocalizedListValue = string[] | { en?: string[]; ar?: string[] } | null | undefined;
+
+function localizedText(value: LocalizedTextValue, fallback = '') {
+  if (!value) return fallback;
+  if (typeof value === 'string') return value;
+  return value.en || value.ar || fallback;
+}
+
+function localizedList(value: LocalizedListValue) {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string');
+  }
+  return (value.en || value.ar || []).filter((item): item is string => typeof item === 'string');
+}
+
 function greeting() {
   const h = new Date().getHours();
   if (h < 12) return 'Good morning';
@@ -46,10 +63,16 @@ export default function DashboardScreen() {
   const recentVitals = dashboard?.recent_vitals ?? [];
   const recentList = recentVitals.slice(0, 5).map(mapVitalToListItem);
   const healthScore = dashboard?.analysis_preview?.health_score ?? null;
-  const recommendation = dashboard?.analysis_preview?.recommendations?.[0]
-    ?? dashboard?.analysis_preview?.summary
-    ?? dashboard?.analysis_preview?.health_message
+  const analysisPreview = dashboard?.analysis_preview;
+  const riskLabel = localizedText(
+    analysisPreview?.risk_level,
+    healthScore === null ? 'No Data' : healthScore >= 70 ? 'Good' : 'Review'
+  );
+  const recommendation = localizedList(analysisPreview?.recommendations)[0]
+    ?? localizedText(analysisPreview?.summary)
+    ?? localizedText(analysisPreview?.health_message)
     ?? 'Log readings to generate backend health recommendations.';
+  const scoreFooter = localizedText(analysisPreview?.health_message, 'Last assessed from backend dashboard');
   const displayName = dashboard?.user?.name || 'HealthSync User';
   const scoreCardColors = {
     background: isDark ? '#02070A' : colors.brand,
@@ -130,7 +153,7 @@ export default function DashboardScreen() {
             <AppText variant="labelMd" style={[styles.scoreLabelText, { color: scoreCardColors.label }]}>
               OVERALL HEALTH SCORE
             </AppText>
-            <StatusBadge status={healthScore === null ? 'info' : healthScore >= 70 ? 'normal' : 'elevated'} label={dashboard?.analysis_preview?.risk_level || (healthScore === null ? 'No Data' : healthScore >= 70 ? 'Good' : 'Review')} />
+            <StatusBadge status={healthScore === null ? 'info' : healthScore >= 70 ? 'normal' : 'elevated'} label={riskLabel} />
           </View>
           <View style={styles.scoreRow}>
             <AppText variant="vitalsDisplay" style={[styles.scoreNum, { color: scoreCardColors.score }]}>{healthScore ?? '--'}</AppText>
@@ -140,7 +163,7 @@ export default function DashboardScreen() {
             <View style={[styles.scoreFill, { width: `${healthScore ?? 0}%`, backgroundColor: colors.vitalsNormal }]} />
           </View>
           <AppText variant="labelMd" style={[styles.scoreFooterText, { color: scoreCardColors.footer }]}>
-            {dashboard?.analysis_preview?.health_message || 'Last assessed from backend dashboard'}
+            {scoreFooter}
           </AppText>
         </View>
 

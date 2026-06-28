@@ -9,7 +9,7 @@ export interface AIAnalysisCard {
 export interface AIAnalysisResponse {
   health_score?: number;
   healthScore?: number;
-  risk_level?: string | null;
+  risk_level?: string | { en?: string; ar?: string } | null;
   model_prediction?: string | null;
   confidence?: number | null;
   probabilities?: Record<string, number>;

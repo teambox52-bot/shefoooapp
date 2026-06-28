@@ -1,6 +1,8 @@
 export type MeasurementMode = 'full' | 'bp' | 'glucose' | 'pulse';
 export type MeasurementSessionStatus = 'pending' | 'running' | 'completed' | 'expired' | 'cancelled';
 export type MeasurementSessionSource = 'backend_wifi' | 'local_ap' | 'mobile_relay' | 'mobile_local_ap_relay';
+export type LocalizedText = string | { en?: string; ar?: string } | null;
+export type LocalizedList = string[] | { en?: string[]; ar?: string[] } | null;
 
 export type MeasurementSession = {
   id: number;
@@ -67,7 +69,7 @@ export type MeasurementResultResponse = {
     measured_at?: string | null;
   }>;
   notifications?: Array<Record<string, unknown>>;
-  recommendations?: string[];
-  latest_recommendation?: string | null;
+  recommendations?: LocalizedList;
+  latest_recommendation?: LocalizedText;
   analysis: Record<string, unknown>;
 };

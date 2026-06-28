@@ -37,6 +37,33 @@ type FlowStatus =
 const POLL_INTERVAL_MS = 1000;
 const FULL_MEASUREMENT_TIMEOUT_MS = 15 * 60 * 1000;
 
+type LocalizedTextValue = string | { en?: string; ar?: string } | null | undefined;
+type LocalizedListValue = string[] | { en?: string[]; ar?: string[] } | null | undefined;
+
+function localizedText(value: LocalizedTextValue, fallback = '') {
+  if (!value) return fallback;
+  if (typeof value === 'string') return value;
+  return value.en || value.ar || fallback;
+}
+
+function localizedList(value: LocalizedListValue) {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string');
+  }
+  return (value.en || value.ar || []).filter((item): item is string => typeof item === 'string');
+}
+
+function unknownToLocalizedText(value: unknown, fallback = '') {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object') {
+    const maybeLocalized = value as { en?: unknown; ar?: unknown };
+    if (typeof maybeLocalized.en === 'string') return maybeLocalized.en;
+    if (typeof maybeLocalized.ar === 'string') return maybeLocalized.ar;
+  }
+  return fallback;
+}
+
 export default function DeviceMeasurementScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -49,6 +76,9 @@ export default function DeviceMeasurementScreen() {
   const pollRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = React.useRef<number | null>(null);
   const submittingRef = React.useRef(false);
+  const latestRecommendation = result
+    ? localizedText(result.latest_recommendation) || localizedList(result.recommendations).at(-1)
+    : '';
 
   const stopPolling = React.useCallback(() => {
     if (pollRef.current) {
@@ -305,7 +335,7 @@ export default function DeviceMeasurementScreen() {
             </AppText>
             <InfoRow label="Session" value={`#${result.session.id} · ${result.session.status}`} />
             <InfoRow label="Health Score" value={String(result.analysis.health_score ?? '--')} />
-            <InfoRow label="Risk Level" value={String(result.analysis.risk_level ?? '--')} />
+            <InfoRow label="Risk Level" value={unknownToLocalizedText(result.analysis.risk_level, '--')} />
             {result.stored_vitals && result.stored_vitals.length > 0 && (
               <View style={styles.storedReadings}>
                 <AppText variant="headlineMd" color={colors.onSurface}>
@@ -322,9 +352,9 @@ export default function DeviceMeasurementScreen() {
                 ))}
               </View>
             )}
-            {result.recommendations && result.recommendations.length > 0 && (
+            {Boolean(latestRecommendation) && (
               <AppText variant="bodySm" color={colors.onSurfaceVariant}>
-                Latest recommendation: {result.latest_recommendation ?? result.recommendations[result.recommendations.length - 1]}
+                Latest recommendation: {latestRecommendation}
               </AppText>
             )}
             <AppText variant="bodySm" color={colors.onSurfaceVariant}>

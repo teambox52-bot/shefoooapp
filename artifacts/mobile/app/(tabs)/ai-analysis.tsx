@@ -24,8 +24,8 @@ function localizedList(value: string[] | { en?: string[]; ar?: string[] } | unde
   return value.en || value.ar || [];
 }
 
-function riskToBadgeStatus(risk?: string | null): 'normal' | 'elevated' | 'critical' | 'info' {
-  const normalized = (risk || '').toLowerCase();
+function riskToBadgeStatus(risk?: string | { en?: string; ar?: string } | null): 'normal' | 'elevated' | 'critical' | 'info' {
+  const normalized = localizedText(risk ?? undefined).toLowerCase();
   if (normalized === 'high' || normalized === 'danger' || normalized === 'critical') return 'critical';
   if (normalized === 'medium' || normalized === 'warning' || normalized === 'elevated') return 'elevated';
   if (normalized === 'low' || normalized === 'normal') return 'normal';
@@ -89,6 +89,7 @@ export default function AIAnalysisScreen() {
   const explanation = localizedText(analysis?.localized_explanation ?? analysis?.explanation);
   const cards = analysis?.cards ?? [];
   const probabilities = analysis?.probabilities ?? {};
+  const riskLabel = localizedText(analysis?.risk_level ?? undefined, analysis?.model_prediction ?? 'No Data');
   const badgeStatus = riskToBadgeStatus(analysis?.risk_level ?? analysis?.model_prediction);
 
   const scoreCardColors = {
@@ -173,7 +174,7 @@ export default function AIAnalysisScreen() {
             <AppText style={[styles.scoreLabelText, { color: scoreCardColors.label }]}>
               OVERALL HEALTH SCORE
             </AppText>
-            <StatusBadge status={badgeStatus} label={(analysis?.risk_level || 'No Data').replace(/_/g, ' ')} />
+            <StatusBadge status={badgeStatus} label={riskLabel.replace(/_/g, ' ')} />
           </View>
           <View style={styles.scoreRow}>
             <AppText variant="vitalsDisplay" style={[styles.scoreNum, { color: scoreCardColors.score }]}>{score}</AppText>
